@@ -3,7 +3,14 @@
 const char* TypeTranslation[] = { "NUM", "KEYWARD", "IDENTIFIER", "TYPE", "BOARDER", "UNKNOWN", "EOF", "OPERATOR" };
 
 
-
+string use_chars[] =
+{
+	"+","-","*","/","=,","==",">",">=","<","<=",
+	"!=","auto", "break", "case","const", "continue","default", "do", "else", "enum",
+	"extern", "for", "goto", "if","register", "return","signed", "sizeof", "static","struct",
+	"switch", "typedef", "union", "unsigned","volatile", "while","int","void","char","short",
+	"float","double","long" , "(",")","{","}",",",";"
+};
 
 
 bool LexicalAnalyzer::IsLetter(const unsigned char ch) {
@@ -52,12 +59,13 @@ unsigned char LexicalAnalyzer::GetNextChar() {
 
 WordInfo LexicalAnalyzer::GetBasicWord() {
 	unsigned char ch;
+	unsigned char next;
 	string str_token;
 	WordInfo word;
 	while (!code_reader_.eof()) {
 		ch = GetNextChar();
 		if ('/' == ch) {
-			unsigned char next = GetNextChar();
+			next = GetNextChar();
 			if ('/' == ch) {
 				while (GetNextChar() != '\n' && !code_reader_.eof());//到回车为止
 			}
@@ -83,10 +91,11 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 		}
 		else if (IsDigital(ch)) {
 			str_token += ch;
+			int tag = 0; //错误标识
 			while (!code_reader_.eof()) {
 				if (ch == '0')
 				{
-					unsigned next = GetNextChar();
+					next = GetNextChar();
 					if (next == 'X' || next == 'x')
 					{
 						str_token += next;
@@ -96,26 +105,118 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 							str_token += next;
 							next = GetNextChar();
 						}
+						while (BORDERS.find(next) == BORDERS.end() && !IsBlank(next))
+						{
+							tag = 1;
+							str_token += next;
+							next = GetNextChar();
+						}
 						code_reader_.seekg(-1, ios::cur);
-						word.type = LCINT;
-						word.value = str_token;
+						if (tag == 0)
+						{
+							word.type = LCINT;
+							word.value = str_token;
+						}
+						else
+						{
+							word.type = LUNKNOWN;
+							word.value = str_token + ", line: " + std::to_string(line_counter_);
+							tag = 0;  //找到错误 重置标识
+						}
 						return word;
+
 					}
-					else if(next>='1'&&next<='7')
+					else if (next >= '1' && next <= '7')
 					{
 						while (next >= '1' && next <= '7')
 						{
 							str_token += next;
 							next = GetNextChar();
 						}
+						while (BORDERS.find(next) == BORDERS.end() && !IsBlank(next))
+						{
+							tag = 1;
+							str_token += next;
+							next = GetNextChar();
+						}
 						code_reader_.seekg(-1, ios::cur);
-						word.type = LCINT;
-						word.value = str_token;
+						if (tag == 0)
+						{
+							word.type = LCINT;
+							word.value = str_token;
+						}
+						else
+						{
+							word.type = LUNKNOWN;
+							word.value = str_token + ", line: " + std::to_string(line_counter_);
+							tag = 0;  //找到错误 重置标识
+						}
+
 						return word;
+					}
+					else if (next == '.' || next == 'e' || next == 'E')
+					{
+						if (next == '.')
+						{
+							str_token += next;
+							next = GetNextChar();
+							while (IsDigital(next))
+							{
+								str_token += next;
+								next = GetNextChar();
+							}
+						}
+						if (next == 'e' || next == 'E')
+						{
+							str_token += next;
+							next = GetNextChar();
+							if (next == '-' || next == '+')
+							{
+								str_token += next;
+								next = GetNextChar();
+							}
+							if (IsDigital(next))
+							{
+								while (IsDigital(next))
+								{
+									str_token += next;
+									next = GetNextChar();
+								}
+							}
+							if (IsBlank(next))
+							{
+								code_reader_.seekg(-1, ios::cur);
+								word.type = LUNKNOWN;
+								word.value = str_token + ", line: " + std::to_string(line_counter_);
+								return word;
+							}
+						}
+
+						while (BORDERS.find(next) == BORDERS.end() && !IsBlank(next))
+						{
+							tag = 1;
+							str_token += next;
+							next = GetNextChar();
+						}
+						code_reader_.seekg(-1, ios::cur);
+						if (tag == 0)
+						{
+							word.type = LCINT;
+							word.value = str_token;
+						}
+						else
+						{
+							word.type = LUNKNOWN;
+							word.value = str_token + ", line: " + std::to_string(line_counter_);
+							tag = 0;  //找到错误 重置标识
+						}
+
+						return word;
+
 					}
 					else
 					{
-						if (BORDERS.find(next) != BORDERS.end())
+						if (BORDERS.find(next) != BORDERS.end() || IsBlank(next))
 						{
 
 							code_reader_.seekg(-1, ios::cur);
@@ -125,6 +226,12 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 						}
 						else
 						{
+							while (BORDERS.find(next) == BORDERS.end() && !IsBlank(next))
+							{
+								str_token += next;
+								next = GetNextChar();
+							}
+							code_reader_.seekg(-1, ios::cur);
 							word.type = LUNKNOWN; //操作符
 							word.value = str_token + ", line: " + std::to_string(line_counter_);
 							return word;
@@ -133,7 +240,7 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 				}
 				else
 				{
-					unsigned char next = GetNextChar();
+					next = GetNextChar();
 					while (IsDigital(next))
 					{
 						str_token += next;
@@ -168,15 +275,35 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 						}
 						else
 						{
-							word.type = LUNKNOWN; //操作符
-							word.value = str_token + ", line: " + std::to_string(line_counter_);
-							return word;
+							if (IsBlank(next)||BORDERS.find(next)!=BORDERS.end())
+							{
+								code_reader_.seekg(-1, ios::cur);
+								word.type = LUNKNOWN; //操作符
+								word.value = str_token + ", line: " + std::to_string(line_counter_);
+								return word;
+							}
 						}
 					}
+					while (BORDERS.find(next) == BORDERS.end() && !IsBlank(next))
+					{
+						tag = 1;
+						str_token += next;
+						next = GetNextChar();
+					}
 					code_reader_.seekg(-1, ios::cur);
-					word.type = LCINT;
-					word.value = str_token;
+					if (tag == 0)
+					{
+						word.type = LCINT;
+						word.value = str_token;
+					}
+					else
+					{
+						word.type = LUNKNOWN;
+						word.value = str_token + ", line: " + std::to_string(line_counter_);
+						tag = 0;  //找到错误 重置标识
+					}
 					return word;
+
 				}
 
 			}
@@ -185,7 +312,7 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 			str_token += ch;
 			while (!code_reader_.eof())
 			{
-				unsigned char next = GetNextChar();
+				next = GetNextChar();
 				if (!(IsLetter(next) || IsDigital(next)))
 				{
 					code_reader_.seekg(-1, ios::cur);
@@ -231,7 +358,7 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 		else if (IsDoubleCharOperatorPre(ch))
 		{
 			str_token += ch;
-			unsigned char next = GetNextChar();
+			next = GetNextChar();
 			if ('=' == next)
 			{
 				str_token += next;
@@ -282,11 +409,35 @@ void LexicalAnalyzer::PrintDetail(WordInfo word)
 	lexical_analyser_printer_ << "step " << step_counter_ << " , type: " << TypeTranslation[word.type] << " , value: " << word.value;
 	if (word.type == LUNKNOWN)
 		lexical_analyser_printer_ << "    ****** warning! ******";
+
 	lexical_analyser_printer_ << endl;
 	step_counter_++;
 	return;
 }
 
+void LexicalAnalyzer::PrintInfo(WordInfo word)
+{
+	if (word.type == LEOF)
+		return;
+	
+	if (word.type == LUNKNOWN)
+	{
+		lexical_analyser_print_info_ <<"("<< -1 << " ," << word.value<<")";
+		lexical_analyser_print_info_ << "    ****** warning! ******";
+	}
+	else
+	{
+		if (word.type == LCINT)
+			lexical_analyser_print_info_ << "(" << 50 << " ," << word.value << ")";
+		else if(word.type==LIDENTIFIER)
+			lexical_analyser_print_info_ << "(" << 51 << " ," << word.value << ")";
+		else lexical_analyser_print_info_ << "(" <<Index(word.value) << " ," << word.value << ")";
+
+		
+	}
+	lexical_analyser_print_info_ << endl;
+	return;
+}
 LexicalAnalyzer::LexicalAnalyzer()
 {
 	line_counter_ = 1;
@@ -301,6 +452,9 @@ LexicalAnalyzer::~LexicalAnalyzer()
 
 	if (lexical_analyser_printer_.is_open())
 		lexical_analyser_printer_.close();
+
+	if (lexical_analyser_print_info_.is_open())
+		lexical_analyser_print_info_.close();
 }
 
 bool LexicalAnalyzer::IsReadyToAnalyze(bool show_detail, const string code_filename)
@@ -309,7 +463,11 @@ bool LexicalAnalyzer::IsReadyToAnalyze(bool show_detail, const string code_filen
 	{
 		print_detail_ = true;
 		lexical_analyser_printer_.open("./lexical_analyser_result.txt");
+		lexical_analyser_print_info_.open("./lexical_analyser_result_info.txt");
 		if (!lexical_analyser_printer_.is_open()) {
+			cerr << "词法分析过程中，显示输出结果文件打开失败！" << endl;
+		}
+		if (!lexical_analyser_print_info_.is_open()) {
 			cerr << "词法分析过程中，显示输出结果文件打开失败！" << endl;
 		}
 	}
@@ -328,6 +486,18 @@ bool LexicalAnalyzer::IsReadyToAnalyze(bool show_detail, const string code_filen
 	{
 		WordInfo word = GetBasicWord();
 		PrintDetail(word);
+		PrintInfo(word);
 	}
 	return true;
+}
+
+
+int LexicalAnalyzer::Index(string word_value)
+{
+	for (int i = 0; i < chars_num; i++)
+	{
+		if (use_chars[i] == word_value)
+			return i;
+	}
+	return 0;
 }

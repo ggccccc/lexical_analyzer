@@ -13,6 +13,7 @@ using namespace std;
 class LexicalAnalyzer {
 private:
 	set<string> OPERATORS = { "+","-","*","/","=,","==",">",">=","<","<=","!=" };
+
 	set<string> KEYWORDS = 
 	{ 
 		"auto", "break", "case","const", "continue",
@@ -26,6 +27,7 @@ private:
 	set<char> BORDERS = { '(',')','{','}',',',';' };
 	ifstream code_reader_;
 	ofstream lexical_analyser_printer_;
+	ofstream lexical_analyser_print_info_;
 	unsigned int line_counter_;
 	bool print_detail_;
 	unsigned int step_counter_;
@@ -36,6 +38,8 @@ private:
 	bool IsBlank(const unsigned char ch);//是否是空白符
 	unsigned char GetNextChar();//获取字符流中的下一个字符，同时计算行数。
 	void PrintDetail(WordInfo word);//打印词法分析信息
+	void PrintInfo(WordInfo word);
+	int Index(string word_value);
 	WordInfo GetBasicWord();
 
 

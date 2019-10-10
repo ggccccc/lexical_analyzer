@@ -1,8 +1,8 @@
 #pragma once
 #ifndef UTILS_H
 #define UTILS_H
+#define chars_num 49
 
-#include <vector>
 #include <string>
 
 using namespace std;
@@ -18,7 +18,10 @@ struct WordInfo//综合属性
 {
 	LEXICAL_TYPE type;//词类型
 	string value;//常量的值，或者关键字本身
-	string word_string;
 };
+
+
+
+
 
 #endif

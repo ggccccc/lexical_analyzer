@@ -1,6 +1,6 @@
 int fac(int x)   //µÝ¹éº¯Êý
 {
-	int f;
+	int 0kasdff;
 	if (x <= 1.0)
 	{
 		f = 0c;
@@ -9,7 +9,7 @@ int fac(int x)   //µÝ¹éº¯Êý
 	{
 		f = fac(x - 1.7e) * x;
 	}
-	return f;
+	return 123f;
 }
 
 void main(void)
