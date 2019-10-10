@@ -15,14 +15,13 @@ private:
 	set<string> OPERATORS = { "+","-","*","/","=,","==",">",">=","<","<=","!=" };
 	set<string> KEYWORDS = 
 	{ 
-		"auto", "break", "case", "char", "const", "continue",
-		"default", "do", "double", "else", "enum", "extern",
-		"float", "for", "goto", "if", "int", "long",
-		"register", "return", "short", "signed", "sizeof", "static",
-		"struct", "switch", "typedef", "union", "unsigned", "void",
+		"auto", "break", "case","const", "continue",
+		"default", "do", "else", "enum", "extern", "for", "goto", "if",
+		"register", "return","signed", "sizeof", "static",
+		"struct", "switch", "typedef", "union", "unsigned",
 		"volatile", "while" 
 	};
-	//set<string> TYPES = { "int","void" };
+	set<string> TYPES = { "int","void","char","short","float","double","long"};
 	set<string> PRE_OPERATORS = { "+","-" };
 	set<char> BORDERS = { '(',')','{','}',',',';' };
 	ifstream code_reader_;

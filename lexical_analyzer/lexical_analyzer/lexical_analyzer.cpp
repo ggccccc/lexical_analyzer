@@ -2,6 +2,10 @@
 
 const char* TypeTranslation[] = { "NUM", "KEYWARD", "IDENTIFIER", "TYPE", "BOARDER", "UNKNOWN", "EOF", "OPERATOR" };
 
+
+
+
+
 bool LexicalAnalyzer::IsLetter(const unsigned char ch) {
 	if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || '_' == ch)//包含下划线
 		return true;
@@ -80,19 +84,137 @@ WordInfo LexicalAnalyzer::GetBasicWord() {
 		else if (IsDigital(ch)) {
 			str_token += ch;
 			while (!code_reader_.eof()) {
-				unsigned char next = GetNextChar();
-				if (!IsDigital(next)) {
+				if (ch == '0')
+				{
+					unsigned next = GetNextChar();
+					if (next == 'X' || next == 'x')
+					{
+						str_token += next;
+						next = GetNextChar();
+						while (IsDigital(next) || (next >= 'a' && next <= 'f') || (next >= 'A' && next <= 'F'))
+						{
+							str_token += next;
+							next = GetNextChar();
+						}
+						code_reader_.seekg(-1, ios::cur);
+						word.type = LCINT;
+						word.value = str_token;
+						return word;
+					}
+					else if(next>='1'&&next<='7')
+					{
+						while (next >= '1' && next <= '7')
+						{
+							str_token += next;
+							next = GetNextChar();
+						}
+						code_reader_.seekg(-1, ios::cur);
+						word.type = LCINT;
+						word.value = str_token;
+						return word;
+					}
+					else
+					{
+						if (BORDERS.find(next) != BORDERS.end())
+						{
+
+							code_reader_.seekg(-1, ios::cur);
+							word.type = LCINT;
+							word.value = str_token;
+							return word;
+						}
+						else
+						{
+							word.type = LUNKNOWN; //操作符
+							word.value = str_token + ", line: " + std::to_string(line_counter_);
+							return word;
+						}
+					}
+				}
+				else
+				{
+					unsigned char next = GetNextChar();
+					while (IsDigital(next))
+					{
+						str_token += next;
+						next = GetNextChar();
+					}
+					if (next == '.')
+					{
+						str_token += next;
+						next = GetNextChar();
+						while (IsDigital(next))
+						{
+							str_token += next;
+							next = GetNextChar();
+						}
+					}
+					if (next == 'e' || next == 'E')
+					{
+						str_token += next;
+						next = GetNextChar();
+						if (next == '-' || next == '+')
+						{
+							str_token += next;
+							next = GetNextChar();
+						}
+						if (IsDigital(next))
+						{
+							while (IsDigital(next))
+							{
+								str_token += next;
+								next = GetNextChar();
+							}
+						}
+						else
+						{
+							word.type = LUNKNOWN; //操作符
+							word.value = str_token + ", line: " + std::to_string(line_counter_);
+							return word;
+						}
+					}
 					code_reader_.seekg(-1, ios::cur);
 					word.type = LCINT;
 					word.value = str_token;
 					return word;
 				}
-				else {
-					str_token += next;
-				}
+
 			}
 		}
 		else if (IsLetter(ch)) {
+			str_token += ch;
+			while (!code_reader_.eof())
+			{
+				unsigned char next = GetNextChar();
+				if (!(IsLetter(next) || IsDigital(next)))
+				{
+					code_reader_.seekg(-1, ios::cur);
+					break;
+				}
+				else
+				{
+					str_token += next;
+				}
+			}
+			if (KEYWORDS.find(str_token) != KEYWORDS.end())
+			{
+				word.type = LKEYWORD;
+				word.value = str_token;
+				return word;
+			}
+			else if (TYPES.find(str_token) != TYPES.end())
+			{
+				word.type = LTYPE;
+				word.value = str_token;
+				return word;
+			}
+			else
+			{
+				word.type = LIDENTIFIER;
+				word.value = str_token;
+				return word;
+			}
+
 		}
 		else if (BORDERS.find(ch) != BORDERS.end())
 		{
